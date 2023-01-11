@@ -7,9 +7,12 @@ const userRoute = require("./routes/user");
 const authRoute = require("./routes/auth");
 const productRoute = require("./routes/product");
 const orderRoute = require("./routes/order");
+const Image = require("./models/Image");
+const fs = require("fs");
+const { toJSON } = require("flatted");
 
 dotenv.config();
-mongoose.set('strictQuery', true);
+mongoose.set("strictQuery", true);
 
 mongoose
   .connect(process.env.MONGO_URL)
@@ -19,10 +22,30 @@ mongoose
   });
 
 const storage = multer.diskStorage({
-    destination: (req, file, cd) => {
-        cd(null,'uploads')
-    }
-})
+  destination: (req, file, cd) => {
+    cd(null, "uploads");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+app.post("/uploads", upload.single("testImage"), (req, res) => {
+  const saveImage = new Image({
+    name: req.body.name,
+    img: {
+      data:  req.file.filename,
+      contentType: "image/png",
+    },
+  });
+  saveImage
+    .save()
+    .then((res) => console.log(res + " image saved"))
+        .catch((err) => console.log(err));
+    const str = toJSON(res);
+    res.status(200).send(str);
+});
 app.use(express.json());
 app.use("/api/auth", authRoute);
 app.use("/api/user", userRoute);
